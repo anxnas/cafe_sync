@@ -9,24 +9,49 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+from os import getenv, path, makedirs
 from pathlib import Path
+from loguru import logger
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Создание необходимых директорий
+makedirs(path.join(BASE_DIR, 'logs'), exist_ok=True)
+makedirs(path.join(BASE_DIR, 'static'), exist_ok=True)
+makedirs(path.join(BASE_DIR, 'media'), exist_ok=True)
+makedirs(path.join(BASE_DIR, 'templates'), exist_ok=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-k7&w$32(r=&mie(_h+v&4!&-_4^!fa(v3-0hzk=pft6d-cxwd)'
+SECRET_KEY = getenv('SECRET_KEY', 'django-insecure-k7&w$32(r=&mie(_h+v&4!&-_4^!fa(v3-0hzk=pft6d-cxwd)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] if getenv('DJANGO_ALLOWED_HOSTS', '') == '*' else getenv('DJANGO_ALLOWED_HOSTS', '').split(',')
 
+logger.add(
+    path.join(BASE_DIR, 'logs', 'debug.log'),
+    level='DEBUG' if DEBUG else 'INFO',
+    rotation='10 MB',
+    retention='30 days',
+    compression='zip',
+    format='{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}',
+)
+
+if DEBUG:
+    from corsheaders.defaults import default_headers
+
+    CORS_ORIGIN_ALLOW_ALL = True
+    CORS_ALLOW_HEADERS = (
+        *default_headers,
+        'ngrok-skip-browser-warning',
+    )
+else:
+    logger.info("Запуск в режиме production")
 
 # Application definition
 
@@ -55,7 +80,7 @@ ROOT_URLCONF = 'cafe_sync.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -68,7 +93,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'cafe_sync.wsgi.application'
+ASGI_APPLICATION = 'cafe_sync.asgi.application'
 
 
 # Database
@@ -76,8 +101,12 @@ WSGI_APPLICATION = 'cafe_sync.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': getenv('POSTGRES_DB', 'cafe_sync'),
+        'USER': getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': getenv('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -104,19 +133,23 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+LANGUAGE_CODE = getenv('LANGUAGE_CODE', 'ru-ru')
+TIME_ZONE = getenv('TIME_ZONE', 'Europe/Moscow')
 USE_I18N = True
-
 USE_TZ = True
+
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [path.join(BASE_DIR, 'static')]
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
