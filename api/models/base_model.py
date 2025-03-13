@@ -26,10 +26,19 @@ class BaseModel(models.Model):
         primary_key=True,
         default=uuid.uuid4,
         editable=False,
-        verbose_name='Уникальный идентификатор'
+        verbose_name='Уникальный идентификатор',
+        help_text='Уникальный идентификатор записи.'
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата создания',
+        help_text='Дата и время создания записи.'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Дата обновления',
+        help_text='Дата и время последнего обновления записи.'
+    )
 
     class Meta:
         abstract = True
