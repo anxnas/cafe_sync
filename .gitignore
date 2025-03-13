@@ -64,3 +64,4 @@ tg_bot/local.env
 *.env
 !example.env
 /media/internship_materials/
+/.coverage

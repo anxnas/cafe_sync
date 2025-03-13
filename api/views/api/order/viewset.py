@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from api.models import Order, OrderStatus
 from api.serializers import OrderSerializer
 from api.services.order_service import OrderService
@@ -14,6 +15,24 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'table_number',
+                openapi.IN_QUERY,
+                description="Фильтр по номеру стола",
+                type=openapi.TYPE_INTEGER
+            ),
+            openapi.Parameter(
+                'status',
+                openapi.IN_QUERY,
+                description="Фильтр по статусу заказа",
+                type=openapi.TYPE_STRING,
+                enum=[status.value for status in OrderStatus]
+            ),
+        ]
+    )
 
     def get_queryset(self):
         """
@@ -30,7 +49,14 @@ class OrderViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
 
         return queryset
-
+    
+    @swagger_auto_schema(
+        request_body=OrderSerializer,
+        responses={
+            201: OrderSerializer,
+            400: "Некорректные данные заказа"
+        }
+    )
     def create(self, request, *args, **kwargs):
         """
         Создает новый заказ.
@@ -54,7 +80,15 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
+        
+    @swagger_auto_schema(
+        request_body=OrderSerializer,
+        responses={
+            200: OrderSerializer,
+            400: "Некорректные данные заказа",
+            404: "Заказ не найден"
+        }
+    )
     def update(self, request, *args, **kwargs):
         """
         Обновляет существующий заказ.
