@@ -1,0 +1,5 @@
+django==5.0.4
+loguru==0.7.3
+djangorestframework==3.15.1
+drf-yasg==1.21.10
+uvicorn==0.29.0
