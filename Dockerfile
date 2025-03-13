@@ -10,10 +10,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Копирование файлов зависимостей
-COPY requirements.txt .
+COPY requirements /app/requirements
 
 # Установка зависимостей
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements/prod.txt
 
 # Копирование кода проекта
 COPY . .
