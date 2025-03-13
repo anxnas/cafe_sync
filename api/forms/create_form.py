@@ -6,16 +6,8 @@ from api.utils.validators import validate_json_items
 
 class OrderForm(forms.ModelForm):
     """
-    Форма для создания и редактирования заказов.
-    
-    Attributes:
-        items_text: Текстовое поле для ввода блюд в формате JSON.
+    Форма для создания и редактирования заказов с динамическим добавлением блюд.
     """
-    items_text = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': 5}),
-        label='Список блюд (JSON)',
-        help_text='Введите список блюд в формате JSON. Пример: [{"name": "Пицца", "price": 500}, {"name": "Кола", "price": 100}]'
-    )
     
     class Meta:
         model = Order
@@ -23,37 +15,54 @@ class OrderForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
+        self.items_data = []
         
-        if instance:
-            # Если редактируем существующий заказ, преобразуем JSON в текст
-            initial = kwargs.get('initial', {})
-            initial['items_text'] = json.dumps(instance.items, ensure_ascii=False, indent=2)
-            kwargs['initial'] = initial
+        if instance and instance.items:
+            # Если редактируем существующий заказ, сохраняем данные о блюдах
+            self.items_data = instance.items
         
         super().__init__(*args, **kwargs)
     
-    def clean_items_text(self):
+    def clean(self):
         """
-        Валидация и преобразование текстового поля items_text в JSON.
+        Валидация формы и обработка данных о блюдах.
+        """
+        cleaned_data = super().clean()
         
-        Returns:
-            list: Список блюд в формате JSON.
-        """
-        items_text = self.cleaned_data['items_text']
-        return validate_json_items(items_text)
+        # Получаем данные о блюдах из POST-запроса
+        items = []
+        i = 0
+        while f'item_name_{i}' in self.data:
+            name = self.data.get(f'item_name_{i}')
+            price_str = self.data.get(f'item_price_{i}')
+            
+            if name and price_str:
+                try:
+                    price = float(price_str)
+                    if price <= 0:
+                        self.add_error(None, f"Цена блюда '{name}' должна быть положительным числом")
+                    else:
+                        items.append({
+                            'name': name,
+                            'price': price
+                        })
+                except ValueError:
+                    self.add_error(None, f"Цена блюда '{name}' должна быть числом")
+            
+            i += 1
+        
+        if not items:
+            self.add_error(None, "Необходимо добавить хотя бы одно блюдо")
+        
+        cleaned_data['items'] = items
+        return cleaned_data
     
     def save(self, commit=True):
         """
-        Сохраняет форму, устанавливая поле items из items_text.
-        
-        Args:
-            commit: Флаг, указывающий, нужно ли сохранять объект в базе данных.
-            
-        Returns:
-            Order: Объект заказа.
+        Сохраняет форму, устанавливая поле items из данных формы.
         """
         instance = super().save(commit=False)
-        instance.items = self.cleaned_data['items_text']
+        instance.items = self.cleaned_data['items']
         
         if commit:
             instance.save()

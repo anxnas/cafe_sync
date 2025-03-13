@@ -1,0 +1,125 @@
+{% extends 'api/base.html' %}
+
+{% block title %}{% if is_update %}Изменение заказа{% else %}Новый заказ{% endif %} - Система управления заказами кафе{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{% if is_update %}Изменение заказа{% else %}Новый заказ{% endif %}</h1>
+        <a href="{% url 'order-list' %}" class="btn btn-secondary">Назад к списку</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="orderForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.table_number.id_for_label }}" class="form-label">{{ form.table_number.label }}</label>
+                    {{ form.table_number }}
+                    {% if form.table_number.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.table_number.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.status.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Список блюд</label>
+                    <div id="items-container" class="mb-2">
+                        <!-- Здесь будут динамически добавляться блоки с блюдами -->
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" id="add-item-btn">
+                        <i class="bi bi-plus-circle"></i> Добавить блюдо
+                    </button>
+                </div>
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary mt-3">
+                    {% if is_update %}Сохранить изменения{% else %}Создать заказ{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Шаблон для блока с блюдом -->
+    <template id="item-template">
+        <div class="item-row row g-2 mb-2">
+            <div class="col-6">
+                <input type="text" class="form-control item-name" placeholder="Название блюда" required>
+            </div>
+            <div class="col-4">
+                <input type="number" step="0.01" min="0.01" class="form-control item-price" placeholder="Цена" required>
+            </div>
+            <div class="col-2">
+                <button type="button" class="btn btn-outline-danger remove-item-btn">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const itemsContainer = document.getElementById('items-container');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemTemplate = document.getElementById('item-template');
+            let itemCounter = 0;
+            
+            // Функция для добавления нового блока с блюдом
+            function addItemRow(name = '', price = '') {
+                const itemRow = itemTemplate.content.cloneNode(true);
+                const nameInput = itemRow.querySelector('.item-name');
+                const priceInput = itemRow.querySelector('.item-price');
+                const removeBtn = itemRow.querySelector('.remove-item-btn');
+                
+                // Устанавливаем имена полей для передачи на сервер
+                nameInput.name = `item_name_${itemCounter}`;
+                priceInput.name = `item_price_${itemCounter}`;
+                
+                // Устанавливаем значения, если они переданы
+                if (name) nameInput.value = name;
+                if (price !== undefined && price !== '') priceInput.value = price;
+                
+                // Обработчик удаления блока
+                removeBtn.addEventListener('click', function() {
+                    this.closest('.item-row').remove();
+                });
+                
+                itemsContainer.appendChild(itemRow);
+                itemCounter++;
+            }
+            
+            // Обработчик кнопки "Добавить блюдо"
+            addItemBtn.addEventListener('click', function() {
+                addItemRow();
+            });
+            
+            // Загружаем существующие блюда, если это редактирование
+            {% if form.items_data %}
+                {% for item in form.items_data %}
+                    addItemRow('{{ item.name|escapejs }}', {{ item.price|escapejs }});
+                {% endfor %}
+            {% else %}
+                // Добавляем пустую строку для нового заказа
+                addItemRow();
+            {% endif %}
+        });
+    </script>
+{% endblock %}

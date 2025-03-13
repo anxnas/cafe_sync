@@ -1,0 +1,62 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Выручка - Система управления заказами кафе{% endblock %}
+
+{% block content %}
+    <h1>Выручка за смену</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Общая информация</h5>
+                    <p class="card-text"><strong>Общая выручка:</strong> {{ total_revenue }} ₽</p>
+                    <p class="card-text"><strong>Количество оплаченных заказов:</strong> {{ paid_orders_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>Список оплаченных заказов</h2>
+
+    {% if paid_orders %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Стол</th>
+                        <th>Блюда</th>
+                        <th>Сумма</th>
+                        <th>Дата создания</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in paid_orders %}
+                        <tr>
+                            <td>{{ order.uuid|truncatechars:8 }}</td>
+                            <td>{{ order.table_number }}</td>
+                            <td>
+                                <ul class="list-unstyled mb-0">
+                                    {% for item in order.items %}
+                                        <li>{{ item.name }} - {{ item.price }} ₽</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                            <td>{{ order.total_price }} ₽</td>
+                            <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'order-detail' order.uuid %}" class="btn btn-sm btn-info">Детали</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            Оплаченные заказы не найдены.
+        </div>
+    {% endif %}
+{% endblock %}

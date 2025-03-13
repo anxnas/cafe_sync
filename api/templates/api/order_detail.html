@@ -1,0 +1,87 @@
+{% extends 'api/base.html' %}
+
+{% block title %}Заказ #{{ order.uuid|truncatechars:8 }} - Система управления заказами кафе{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Заказ #{{ order.uuid|truncatechars:8 }}</h1>
+        <div>
+            <a href="{% url 'order-list' %}" class="btn btn-secondary">Назад к списку</a>
+            <a href="{% url 'order-update' order.uuid %}" class="btn btn-warning">Изменить</a>
+            <a href="{% url 'order-delete' order.uuid %}" class="btn btn-danger">Удалить</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Основная информация</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID:</strong> {{ order.uuid }}</p>
+                    <p><strong>Номер стола:</strong> {{ order.table_number }}</p>
+                    <p><strong>Статус:</strong> 
+                        <span class="badge {% if order.status == 'pending' %}bg-warning{% elif order.status == 'ready' %}bg-success{% else %}bg-primary{% endif %}">
+                            {{ order.get_status_display }}
+                        </span>
+                    </p>
+                    <p><strong>Дата создания:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Последнее обновление:</strong> {{ order.updated_at|date:"d.m.Y H:i" }}</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Изменить статус</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'order-change-status' order.uuid %}" class="d-flex align-items-center">
+                        {% csrf_token %}
+                        <label for="status-select" class="me-2">Статус:</label>
+                        <select id="status-select" name="status" class="form-select me-2" style="width: auto;">
+                            {% for status_value, status_label in available_statuses %}
+                                <option value="{{ status_value }}" {% if order.status == status_value %}selected{% endif %}>
+                                    {{ status_label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm">Изменить статус</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Список блюд</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Цена</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.price }} ₽</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Итого:</th>
+                                <th>{{ order.total_price }} ₽</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

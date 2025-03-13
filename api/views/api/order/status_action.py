@@ -7,7 +7,7 @@ from api.services.order_service import OrderService
 from api.exceptions.order_exceptions import InvalidOrderData
 
 
-def change_status_action(self, request, pk=None):
+def change_status(self, request, pk=None):
     """
     Изменяет статус заказа.
 
