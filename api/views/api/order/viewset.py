@@ -33,7 +33,6 @@ class OrderViewSet(viewsets.ModelViewSet):
             ),
         ]
     )
-
     def get_queryset(self):
         """
         Получает отфильтрованный queryset на основе параметров запроса.
